@@ -12,6 +12,7 @@
 #include "lcd.h"
 #include "uart.h"
 #include <math.h>
+
 #include "open_interface.h"
 
 //just in case includes
@@ -20,7 +21,6 @@
 #include <stdbool.h>
 #include "driverlib/interrupt.h"
 
-//detect function for 180 degree object detection. Modify this function change object awareness and detection algorithms
 void detect(){
     //variables
     int objectCount=0, objectStatus=0, smObj=0, sent=0;
@@ -34,32 +34,34 @@ void detect(){
         if(irDistance > 150)    {irDistance = 150;}
         if(pingDistance > 350)  {pingDistance = 350;}
 
-        //first edge detection state
-        if(irDistance < 80 && pingDistance < 80 && objectStatus != 1){
-            firstAngle = degrees;
-            currentDistance = irDistance;   firstDistance = currentDistance;
-            objectStatus = 1;               objectCount++;}
+        lcd_printf("degrees:%.1lf\nonObj:%d numObj:%d\nir:%.1lf ping:%.1lf\nsize:%.1lf ang:%.1lf\n", degrees, objectStatus, objectCount, irDistance, pingDistance, smSize, smAng);
 
-        //on object detection state
-        else if(irDistance < 80 && abs(irDistance - currentDistance) < 15 && objectStatus == 1){
-                       currentDistance = irDistance;}
+                //first edge detection state
+                if(irDistance < 80 && pingDistance < 80 && objectStatus != 1){
+                    firstAngle = degrees;
+                    currentDistance = irDistance;   firstDistance = currentDistance;
+                    objectStatus = 1;               objectCount++;}
 
-        //last edge detection state
-        else if(irDistance > 80 && objectStatus == 1){
-            lastDistance = currentDistance;
-            lastAngle = degrees;
-            currentSize = linearWidth(firstAngle, lastAngle, firstDistance, lastDistance);
-            if(currentSize == 1000)         {objectCount--;}
+                //on object detection state
+                else if(irDistance < 80 && abs(irDistance - currentDistance) < 15 && objectStatus == 1){
+                               currentDistance = irDistance;}
 
-            //smallest object logic
-            if(currentSize < smSize || (smSize == 0 && currentSize != 1000)){
-                smSize = currentSize;
-                smAng = firstAngle - ((firstAngle - lastAngle) / 2);
-                smObj = objectCount;
-                smDist = (firstDistance*0.5 + lastDistance*0.5);}
+                //last edge detection state
+                else if(irDistance > 80 && objectStatus == 1){
+                    lastDistance = currentDistance;
+                    lastAngle = degrees;
+                    currentSize = linearWidth(firstAngle, lastAngle, firstDistance, lastDistance);
+                    if(currentSize == 1000)         {objectCount--;}
 
-            //reset current
-            currentDistance = 0;    currentSize = 0;    objectStatus = 0;}
+                    //smallest object logic
+                    if(currentSize < smSize || (smSize == 0 && currentSize != 1000)){
+                        smSize = currentSize;
+                        smAng = firstAngle - ((firstAngle - lastAngle) / 2);
+                        smObj = objectCount;
+                        smDist = (firstDistance*0.5 + lastDistance*0.5);}
+
+                    //reset current
+                    currentDistance = 0;    currentSize = 0;    objectStatus = 0;}
 
         //send to putty
         sprintf(outString, "\n\rdegrees: %.1lf\t ir distance: %.2lfcm\t ping distance: %.2lfcm", degrees, irDistance, pingDistance);
@@ -84,195 +86,362 @@ double linearWidth(double a1, double a2, double d1, double d2){
     return width;
 }
 
-//explore function which will be looped forever to receive input, relay and react to sensor information, and report back feedback based on user commands
 void explore(){
 
-    //initializing sensor_data
     oi_t *sensor_data = oi_alloc();
+    //oi_free(sensor_data);
     oi_init(sensor_data);
 
-    //placeholder variable for user input received from putty ; change if we use an alternative contorller
-    char command = uart_receive();
+    char input;
 
-    if (command == 'w'){
-        char response[] = "Attempting to move forward 25cm\r\n";
-        uart_sendStr(response);
-        move_forward(sensor_data, 25);}
 
-    else if (command == 's'){
-        char response[] = "Moving backwards 100cm\r\n";
-        uart_sendStr(response) ;
-        move_backwards(sensor_data, -100);}
 
-    else if (command == 'd'){
-        char response[] = "Rotating CW 10°\r\n";
-        uart_sendStr(response);
-        turn_clockwise(sensor_data, 5);}
+            input = uart_receive();
+            //forwards
+            if (input == 'w')
+            {
+                char moveForward[] = "Moving Forward\r\n";
+                uart_sendStr(moveForward);
+                move_forward(sensor_data, 25); //move forward
 
-    else if (command == 'a'){
-        char response[] = "Rotating CCW 10°\r\n";
-        uart_sendStr(response) ;
-        turn_counterClockwise(sensor_data, 5);}
+            }
+            //backwards
+            else if (input == 's')
+            {
+                char moveBackwards[] = "Moving Backwards\r\n";
+                uart_sendStr(moveBackwards) ;
+                move_backwards(sensor_data, -100); //backwards
+            }
 
-    else if (command == 'o'){
-        char response[] = "Attempting to detect debris\r\n";
-        uart_sendStr(response);
-        detect();}
+            //rotates clockwise
+            else if (input == 'd')
+            {
+                char turnRight[] = "Rotating Clockwise 10 degrees\r\n";
+                uart_sendStr(turnRight);
+                turn_clockwise(sensor_data, 5) ;//rotate 90 degrees
 
-//    else if (command == 'p'){
-//        char response[] = "Playing SOS beacon\r\n";
-//        uart_sendStr(response) ;
-//        char pitch[18] = {66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66,66};
-//        char length[18] = {15,15,15,45,45,45,15,15,15,45,45,45,15,15,15,45,45,45};
-//        oi_loadSong(0, 20, pitch, length);
-//        oi_play_song(0);}
+            }
 
-    oi_free(sensor_data);
+            //rotates counterclockwise
+            else if (input == 'a')
+            {
+                char turnLeft[] = "Rotating CountClockwise 10 degrees\r\n";
+                uart_sendStr(turnLeft) ;
+                turn_counterClockwise(sensor_data, 5) ;
+            }
+
+            //scan surroundings
+            else if (input == 'o')
+            {
+                char scanning[] = "Scanning..... please wait......\r\n";
+                uart_sendStr(scanning);
+                detect() ;
+            }
+
+            //play song
+            else if (input == 'p')
+            {
+                char songStatement[] = "Playing Song\r\n";
+                uart_sendStr(songStatement) ;
+
+                unsigned char notes[36] = {67,66,67,64,65,66,67,72,76,76,74,76,77,71,74,72};
+                unsigned char lengths[36] = {17,17,17,102,51,51,102,51,38,13,51,51,51,51,102,51};
+                oi_loadSong(0, 16, notes, lengths);
+
+                oi_play_song(0);
+
+            }
+            //move_forward(sensor_data,100);
+
+
+            oi_free(sensor_data);
 }
 
-void move_forward(oi_t *sensor, int centimeters){
-    int counter = 0;
+void move_backwards(oi_t *sensor, int centimeters)
+{
+    oi_setWheels(-100, -100); //move backward; half speed
 
-    while (counter < centimeters){
-        oi_setWheels(75,75);
+    int sum = 0 ;
+
+    while (sum > centimeters)
+    {
         oi_update(sensor);
-        counter += sensor->distance;
 
-        if (cliffCheck() == 1) {
-			break;
-		}
-        else if (bumpCheck() == 1) {
-			break;
-		}
-        else if (lineCheck() == 1) {
-			break;
-		}
+        sum += sensor->distance;
+        timer_waitMillis(1);
 
+    }
+
+    oi_setWheels(0,0); //stop wheels
+    oi_free(sensor);
+}
+
+/**
+*   This method will be used to rotate the Roomba counterClockwise a given amount of degrees.
+*   @author Brian Bradford, Nick Knuth, Andrew Thai, and Rajiv Bhoopala
+*   @param  *sensor     Pointer to struct containing Roomba sensor data
+*   @param  degrees     Degrees for Roomba to rotate
+*   @date 4/12/2017
+*/
+void turn_counterClockwise(oi_t *sensor, int degrees){
+    oi_setWheels(100, -100);
+    timer_waitMillis(degrees*22);
+    oi_setWheels(0, 0); //stop wheels
+    oi_free(sensor) ;
+
+}
+
+/**
+*   This method will be used to rotate the Roomba clockwise a given amount of degrees.
+*   @author Brian Bradford, Nick Knuth, Andrew Thai, and Rajiv Bhoopala
+*   @param  *sensor     Pointer to struct containing Roomba sensor data
+*   @param  degrees     Degrees for Roomba to rotate
+*   @date 4/12/2017
+*/
+void turn_clockwise(oi_t *sensor, int degrees){
+    oi_setWheels(-100, 100);
+    timer_waitMillis(degrees*22);
+    oi_setWheels(0, 0); //stop wheels
+    oi_free(sensor) ;
+}
+
+
+
+void move_forward(oi_t *sensor, int centimeters){
+    int sum = 0 ;
+    while (sum < centimeters)
+    {
+        int leftSignal = sensor -> cliffLeftSignal;
+        int rightSignal = sensor -> cliffRightSignal;
+        int frontLeftSignal = sensor -> cliffFrontLeftSignal;
+        int frontRightSignal = sensor -> cliffFrontRightSignal;
+        oi_setWheels(75,75) ; //move forward
+        oi_update(sensor);
+        sum += sensor->distance;
+
+        //Finish line detection
+        if(leftSignal < 1200)
+        {
+            char* warning = "Finish is on Left Side! \n\r";
+            uart_sendStr(warning);
+        }
+        if(rightSignal < 1200)
+        {
+            char* warning = "Finish is on RIGHT side! \n\r";
+            uart_sendStr(warning);
+        }
+        if(frontLeftSignal < 1200)
+        {
+            char* warning = "Finish is on Front Left side! \n\r";
+            uart_sendStr(warning);
+        }
+        if(frontRightSignal < 1200)
+        {
+            char* warning = "Finish is on Front Right side! \n\r";
+            uart_sendStr(warning);
+        }
+
+        //White line (boundary) detection
+        if(leftSignal > 2500)
+        {
+            char* warning = "White Line on Left Side! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break;
+        }
+        if(rightSignal > 2600)
+        {
+            char* warning = "White Line on RIGHT side! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break ;
+        }
+        if(frontLeftSignal > 2600)
+        {
+            char* warning = "White Line on Front Left side! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break ;
+        }
+        if(frontRightSignal > 2600)
+        {
+            char* warning = "White Line on Front Right side! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break ;
+        }
+
+        //Bumper hit object detection
+        //if (checkBumper(sensor) == 1)
+        if(sensor -> bumpRight)
+        {
+            char* warning = "Hit right bumper! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break ;
+        }
+        if (sensor -> lightBumperFrontRight)
+        {
+            char* warning = "Hit front right bumper! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break ;
+        }
+        if (sensor -> lightBumperCenterRight)
+        {
+            char* warning = "Hit center right bumper! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break ;
+        }
+        if (sensor -> lightBumperCenterLeft)
+        {
+            char* warning = "Hit center left bumper! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break ;
+        }
+        if (sensor -> lightBumperFrontLeft)
+        {
+            char* warning = "Hit front left bumper! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break;
+        }
+        if (sensor -> bumpLeft)
+        {
+            char* warning = "Hit left bumper! \n\r";
+            uart_sendStr(warning);
+            oi_setWheels(0,0);
+            break;
+        }
+
+        //Cliff detection check
+        if (checkCliff(sensor) == 1)
+        {
+            oi_setWheels(0,0);
+            char* warning = "WARNING CLIFF ON LEFT SIDE! \n\r";
+            uart_sendStr(warning);
+
+            break;
+        }
+        if (checkCliff(sensor) ==2)
+        {
+            oi_setWheels(0,0);
+            char* warning = "WARNING CLIFF ON RIGHT SIDE! \n\r";
+            uart_sendStr(warning);
+
+            break;
+        }
+        if (checkCliff(sensor) ==3)
+        {
+            oi_setWheels(0,0);
+            char* warning = "WARNING CLIFF IN FRONT ON LEFT SIDE! \n\r";
+            uart_sendStr(warning);
+
+            break;
+        }
+        if (checkCliff(sensor) == 4)
+        {
+            oi_setWheels(0,0);
+            char* warning = "WARNING CLIFF IN FRONT ON RIGHT SIDE \n\r";
+            uart_sendStr(warning);
+            break;
+        }
         timer_waitMillis(100);
     }
 
-    oi_setWheels(0,0);
+    oi_setWheels(0,0); //stop wheels
     oi_free(sensor);
 }
 
-void move_backwards(oi_t *sensor, int centimeters){
-    oi_setWheels(-100, -100);
-    int counter = 0 ;
+int checkBumper(oi_t *sensor)
+{
+    /**
+     * Bumper States:
+     * bumper = 0, no bumps
+     * bumper = 1, right bumper
+     * bumper = 2, front right bumper
+     * bumper = 3, center right bumper
+     * bumper = 4, center left bumper
+     * bumper = 5, front left bumper
+     * bumper = 6, left bumper
+     */
+    int bumper = 0;
 
-    while (counter > centimeters){
-        oi_update(sensor);
-        counter += sensor->distance;
-        timer_waitMillis(1);}
+    oi_update(sensor);
+    if (sensor-> bumpLeft)
+    {
+        bumper = 6;
+    }
+    else if (sensor-> lightBumperFrontLeft)
+    {
+        bumper = 5;
+    }
+    else if (sensor-> lightBumperCenterLeft)
+        {
+            bumper = 4;
+        }
+    else if (sensor-> lightBumperCenterRight)
+    {
+        bumper = 3;
+    }
+    else if (sensor-> lightBumperFrontRight)
+    {
+        bumper = 2;
+    }
+    else if (sensor-> bumpRight)
+    {
+        bumper = 1;
+    }
+    else
+    {
+        bumper = 0;
+    }
 
-    oi_setWheels(0,0);
-    oi_free(sensor);
+    return bumper;
 }
 
-void turn_counterClockwise(oi_t *sensor, int degrees){
-    oi_setWheels(100, -100);
-    timer_waitMillis(100);
-    oi_setWheels(0, 0);
-    oi_free(sensor) ;
-}
+/**
+*   This method will be used to check the state of the cliff sensors.
+*   @author Brian Bradford, Nick Knuth, Andrew Thai, and Rajiv Bhoopala
+*   @param  *sensor     Pointer to struct containing Roomba sensor data
+*   @date 4/12/2017
+*/
+int checkCliff(oi_t *sensor)
+{
+    oi_update(sensor);
 
-void turn_clockwise(oi_t *sensor, int degrees){
-    oi_setWheels(-100, 100);
-    timer_waitMillis(100);
-    oi_setWheels(0, 0);
-    oi_free(sensor) ;
-}
+    /**
+     *  0 = no cliff
+     *  1 = cliffleft
+     *  2 = cliffright
+     *  3 = cliffront left
+     *  4 = clifffront right
+     */
+    int cliff = 0;
 
-int lineCheck(oi_t *sensor, int centimeters){
-    oi_t *sensor_data = oi_alloc();
-    oi_init(sensor_data);
-    int lineThreshold = 2500;
-
-
-    if(sensor -> cliffLeftSignal > lineThreshold){
-        char* warning = "White line on the left!\n\r";
-        oi_setWheels(0,0);
-        uart_sendStr(warning);
-        return 1;
+    if(sensor-> cliffLeft)
+    {
+        cliff = 1;
+    }
+    else if(sensor -> cliffRight)
+    {
+        cliff = 2;
+    }
+    else if(sensor -> cliffFrontLeft)
+    {
+        cliff = 3;
+    }
+    else if (sensor -> cliffFrontRight)
+    {
+        cliff = 4;
     }
 
-    if(sensor -> cliffRightSignal > lineThreshold){
-        char* warning = "White line on the right!\n\r";
-        oi_setWheels(0,0);
-        uart_sendStr(warning);
-        return 1;
+    else
+    {
+        cliff = 0;
     }
 
-    if(sensor -> cliffFrontLeftSignal > lineThreshold){
-        char* warning = "White line on the front left!\n\r";
-        oi_setWheels(0,0);
-        uart_sendStr(warning);
-        return 1;
-    }
-
-    if(sensor -> cliffFrontRightSignal > lineThreshold){
-        char* warning = "White line on the front right!\n\r";
-        oi_setWheels(0,0);
-        uart_sendStr(warning);
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-
-int bumpCheck(oi_t *sensor, int centimeters){
-
-    if(sensor -> bumpRight){
-        char* warning = "Hit right bumper! \n\r";
-        oi_setWheels(0,0);
-        uart_sendStr(warning);
-      
-        return 1;
-    }
-
-    if (sensor -> bumpLeft) {
-        char* warning = "Hit left bumper! \n\r";
-        oi_setWheels(0,0);
-        uart_sendStr(warning);
-      
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-
-int cliffCheck(oi_t *sensor, int centimeters){
-
-
-    if (sensor-> cliffLeft){
-        oi_setWheels(0,0);
-        char* warning = "Sinkhole on the left!\n\r";
-        uart_sendStr(warning);
-        return 1;
-    }
-
-    if (sensor -> cliffRight){
-        oi_setWheels(0,0);
-        char* warning = "Sinkhole on the right!\n\r";
-        uart_sendStr(warning);
-        return 1;
-    }
-
-  if (sensor -> cliffFrontLeft){
-      oi_setWheels(0,0);
-      char* warning = "Sinkhole on front left!\n\r";
-      uart_sendStr(warning);
-      return 1;
-	  }
-
-  if (sensor -> cliffFrontRight){
-      oi_setWheels(0,0);
-      char* warning = "Sinkhole on front right!\n\r";
-      uart_sendStr(warning);
-      return 1;
-	  }
-  else {
-      return 0;
-  }
+    return cliff;
 }
