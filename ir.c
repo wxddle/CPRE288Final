@@ -68,6 +68,6 @@ float ir_getDistance(){
 	}
 	float q = total/16.0;
 	//equation from excel y = 83327 x ^(-1.129) where y = distance (cm) and x = quantized value
-	float distance = 83327 * pow(q,-1.129);
+	float distance = 54209*pow(q, -1.087);
 	return distance;
 }
