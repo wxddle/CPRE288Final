@@ -40,7 +40,7 @@ void servo_init(){
 
 void servo_move(double degree){
     //calibration values based on PWM and degrees and Roomba #cyBOT 26
-    PWM = ((150*degree));
+    PWM = ((163*degree)+475);
 
     //SETTING 24 BITS OF TIMER 1 (also configured above, needs to be re-evaluated actively based on degree)
     //match value

@@ -61,13 +61,14 @@ float ir_getDistance(){
 	float i = 0.0;
 	float total = 0.0;
 	//Compute a running average of 16 samples and display that value
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < 15; i++) {
 	        ir_read();
 	        total = total + ir_read();
 	        timer_waitMillis(10);       //measure every 50 ms
 	}
-	float q = total/16.0;
+	float q = total/15.0;
 	//equation from excel y = 83327 x ^(-1.129) where y = distance (cm) and x = quantized value
-	float distance = 83327 * pow(q,-1.129);
+	float distance = 54209*pow(q, -1.087);
+	//float distance = 96869 * pow( q, -1.155);
 	return distance;
 }

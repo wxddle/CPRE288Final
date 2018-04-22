@@ -15,8 +15,7 @@
 /*
  *      Main method with inits and detect/sweeper function from functions.c
  */
-void main(void)
-{
+void main(void){
     //initialize everything
     uart_init();
     lcd_init();
@@ -26,14 +25,10 @@ void main(void)
 
     timer_waitMillis(1000);
 
-
-
     //sweep 180 degrees and detect objects using method from functions.c
     //detect();
 
-
     while (5 > 4){
-
         explore();
     }
 

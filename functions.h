@@ -1,20 +1,27 @@
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
-#define PI 3.14159265
 
 #include "open_interface.h"
 
-double linearWidth(double a1, double a2, double d1, double d2);
+#define PI 3.14159265
+
 void detect();
-void explore();
+
+double linearWidth(int angle1, int angle2, double distance);
 
 void move_forward(oi_t *sensor, int centimeters);
+
+int checkBumper(oi_t *sensor);
+
+int checkCliff(oi_t *sensor);
+
+void explore();
+
 void move_backwards(oi_t *sensor, int centimeters);
+
 void turn_counterClockwise(oi_t *sensor, int degrees);
+
 void turn_clockwise(oi_t *sensor, int degrees);
 
-int cliffCheck();
-int bumpCheck();
-int lineCheck();
 
 #endif /* FUNCTIONS_H_ */
