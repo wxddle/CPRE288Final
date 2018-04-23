@@ -67,7 +67,9 @@ float ir_getDistance(){
 	        timer_waitMillis(10);       //measure every 50 ms
 	}
 	float q = total/16.0;
-	//equation from excel y = 83327 x ^(-1.129) where y = distance (cm) and x = quantized value
-	float distance = 83327 * pow(q,-1.129);
+	//CyBot 4 = 54209*pow(q, -1.087)
+	//CyBot 6 = 305110*pow(q, -1.322)
+	//CyBot 2 = 8596.7*pow(q, -0.913)
+	float distance = 202387*pow(q, -1.249);
 	return distance;
 }
