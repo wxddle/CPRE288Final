@@ -7,14 +7,14 @@
 import turtle
 import time
 import math
-
+from pywinauto.application import Application
+from subprocess import Popen, STDOUT, PIPE, DEVNULL
+from IPython.display import clear_output
 
 
 turtle.setup(1920, 1080)
 
 #turtle.goto((x,y)) (0,0) is center
-
-
 
 roomba = turtle.Turtle()    #roomba turtle
 roomba.color("black")
@@ -39,6 +39,11 @@ end.color("green")
 end.penup()
 end.goto((0,80))
 
+drop = turtle.Turtle()       #end post turtle
+drop.color("pink")
+drop.penup()
+end.goto((30,80))
+
 p = roomba.position()       #stores roomba position
 
 time.sleep(2)
@@ -55,6 +60,11 @@ def EdgeToRoomba():
     y = roomba.ycor()       #stores y-coordinate in variable y
     x = roomba.xcor()       #stores x-coordinate in variable x
     edge.goto((x,y))
+    
+def DropToRoomba():
+    y = roomba.ycor()       #stores y-coordinate in variable y
+    x = roomba.xcor()       #stores x-coordinate in variable x
+    drop.goto((x,y))
 
 degrees = 0.0               #first edge degree
 c = 0.0                     #distance of object
@@ -63,34 +73,34 @@ width = 0.0                 #stores width of object
 def NplaceObj():            #places object when roomba is facing N
     y = roomba.ycor()       #stores y-coordinate in variable y
     x = roomba.xcor()       #stores x-coordinate in variable x
-    y += c*math.sin(degrees)
-    x += c*math.cos(degrees)
+    y += c*math.sin(degrees*math.pi/180.0)
+    x += c*math.cos(degrees*math.pi/180.0)
     obj.goto((x,y))
     
 def SplaceObj():            #places object when roomba is facing S
     y = roomba.ycor()       #stores y-coordinate in variable y
     x = roomba.xcor()       #stores x-coordinate in variable x
-    y += -c*math.sin(degrees)
-    x += -c*math.cos(degrees)
+    y += -c*math.sin(degrees*math.pi/180.0)
+    x += -c*math.cos(degrees*math.pi/180.0)
     obj.goto((x,y))
     
 def EplaceObj():            #places object when roomba is facing E
     y = roomba.ycor()       #stores y-coordinate in variable y
     x = roomba.xcor()       #stores x-coordinate in variable x
-    y += -c*math.cos(degrees)
-    x += c*math.sin(degrees)
+    y += -c*math.cos(degrees*math.pi/180.0)
+    x += c*math.sin(degrees*math.pi/180.0)
     obj.goto((x,y))
     
 def WplaceObj():            #places object when roomba is facing W
     y = roomba.ycor()       #stores y-coordinate in variable y
     x = roomba.xcor()       #stores x-coordinate in variable x
-    y += c*math.cos(degrees)
-    x += -c*math.sin(degrees)
+    y += c*math.cos(degrees*math.pi/180.0)
+    x += -c*math.sin(degrees*math.pi/180.0)
     obj.goto((x,y))
 
 def drawObject():           #draws obstacle found in scan
-    y = obj.ycor()       #stores y-coordinate in variable y
-    x = obj.xcor()       #stores x-coordinate in variable x
+    y = obj.ycor()          #stores y-coordinate in variable y
+    x = obj.xcor()          #stores x-coordinate in variable x
     obj.goto((x,y))
     obj.down()
     obj.circle(width/2)
@@ -118,12 +128,33 @@ def drawXEdge():
     edge.goto((x-1000.0,y))
     edge.up()
     
+def drawDropYEdge():
+    y = roomba.ycor()       #stores y-coordinate in variable y
+    x = roomba.xcor()       #stores x-coordinate in variable x
+    DropToRoomba()
+    drop.down()
+    drop.goto((x,y+100.0))
+    DropToRoomba()
+    drop.down()
+    drop.goto((x,y-100.0))
+    drop.up()
 
+def drawDropXEdge():
+    y = roomba.ycor()       #stores y-coordinate in variable y
+    x = roomba.xcor()       #stores x-coordinate in variable x
+    DropToRoomba()
+    drop.down()
+    drop.goto((x+100.0,y))
+    DropToRoomba()
+    drop.down()
+    drop.goto((x-100.0,y))
+    drop.up()
     
     
 roomba.goto(0,400)
 time.sleep(1)
 #drawXEdge()
+
 
 degrees = 30.0               #first edge degree
 c = 40.0                     #distance of object
@@ -131,6 +162,7 @@ width = 10.0                 #stores width of object
 
 NplaceObj()
 drawObject()
+drawDropXEdge()
 
 
 #turtle.forward(25)    
