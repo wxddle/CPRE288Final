@@ -97,27 +97,37 @@ void explore(){
     if (command == 'w'){
         char response[] = "Attempting to move forward 25cm\r\n";
         uart_sendStr(response);
-        move_forward(sensor_data, 25);}
+        move_forward(sensor_data, 25);
+    }
 
     else if (command == 's'){
         char response[] = "Moving backwards 100cm\r\n";
         uart_sendStr(response) ;
-        move_backwards(sensor_data, -100);}
+        move_backwards(sensor_data, -100);
+    }
 
     else if (command == 'd'){
         char response[] = "Rotating CW 10°\r\n";
         uart_sendStr(response);
-        turn_clockwise(sensor_data, 5);}
+        turn_clockwise(sensor_data, 5);
+    }
 
     else if (command == 'a'){
         char response[] = "Rotating CCW 10°\r\n";
         uart_sendStr(response) ;
-        turn_counterClockwise(sensor_data, 5);}
+        turn_counterClockwise(sensor_data, 5);
+    }
 
     else if (command == 'o'){
         char response[] = "Attempting to detect debris\r\n";
         uart_sendStr(response);
-        detect();}
+        detect();
+    }
+    else {				//NEW CODE, SENDS $ while waiting
+	char waiting[] = "$\r\n"
+	uart_sendStr(waiting);
+	timer_waitMillis(1000);
+
 
 //    else if (command == 'p'){
 //        char response[] = "Playing SOS beacon\r\n";
